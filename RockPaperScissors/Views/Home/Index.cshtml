@@ -1,0 +1,168 @@
+﻿<style type="text/css">
+    .main-container {
+    }
+
+    .section-title {
+        margin-top: 10px;
+        margin-bottom: 10px;
+        font-size: 18px;
+        font-weight: bold;
+    }
+
+    .section-user-input {
+        margin-right: 15px;
+        display: grid;
+        grid-template-columns: auto auto;
+        grid-gap: 10px;
+    }
+
+     /*   .section-user-input > div {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            align-items: start;
+        }*/
+
+        .section-user-input label {
+            padding-right: 15px;
+        }
+
+    .display-flex {
+        display: flex;
+    }
+
+    .play-btn-div {
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .results-container {
+        display: flex;
+        flex-direction: column;
+    }
+
+    #output-textbox {
+        width: 318px;
+        height: 110px;
+    }
+
+</style>
+
+<div class="main-container">
+    <div class="section-title">A Game of Rock, Paper, Scissors</div>
+    <div class="display-flex">
+        <div>
+            <div class="section-user-input">
+                <label>No. of Rounds</label>
+                <input id="rounds-input" type="number" value="1" />
+                <label>Player A</label>
+                <input id="player-a-input" />
+                <label>Player B</label>
+                <input id="player-b-input" />
+                <label></label>
+                <button id="play-btn">Play</button>
+            </div>
+        </div>
+        <div class="results-container">
+            <label>Results</label>
+            <textarea id="output-textbox"></textarea>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var validInputs = ['R','P','S'];
+
+        $(document).ready(function () {
+            getValidInputs();
+
+            $('#play-btn').on('click', function () {
+                console.log('btn clicked');
+                var validateResult = validateUserInput();
+                if (validateResult != '') {
+                    // show error message
+                    outputData(validateResult);
+                    return;
+                }
+
+                var gameData = getUserInput();
+                playNow(gameData);
+            });
+        });
+
+        // this is the first validation in front end. The server also has this
+        function validateUserInput() {
+            // 1. rounds should be 1 - 10 only => 'Invalid No. Of Rounds'
+            // 2. only upper case input => 'Invalid input'
+            // 3. not more than rounds no => 'Too many input'
+
+            var roundsNo = $('#rounds-input').val();
+            var inputA = $('#player-a-input').val().split('');
+            var inputB = $('#player-b-input').val().split('');
+
+            var errorMessages = '';
+            if (roundsNo < 1 || roundsNo > 10) {
+                errorMessages += 'Invalid No. Of Rounds \n';
+            }
+
+            if (!inputA.every(a => validInputs.includes(a)) || !inputB.every(a => validInputs.includes(a))) {
+                errorMessages += 'Invalid Input \n';
+            }
+
+            if (inputA.length > roundsNo || inputB.length > roundsNo) {
+                errorMessages += 'Too Many Input \n';
+            }
+
+            //if (inputA.length != roundsNo || inputB != roundsNo) {
+            //    errorMessages += `Please enter at least ${roundsNo} for all players.`;
+            //}
+
+            return errorMessages;
+        }
+
+        function getUserInput() {
+            var gameData = {
+                Rounds: $('#rounds-input').val(),
+                PlayerA: $('#player-a-input').val().split(''),
+                PlayerB: $('#player-b-input').val().split('')
+            };
+
+            return gameData;
+        }
+
+        function outputData(textString) {
+            $('#output-textbox').val(textString);
+        }
+
+        // AJAX
+        function getValidInputs() {
+            $.ajax({
+                url: 'https://localhost:44370/game/getavailableinputs',
+                type: 'POST',
+                success: function (respResult) {
+                    console.log('success', respResult);
+                    validInputs = respResult;
+                },
+                error: function (data) {
+                    console.log(data);
+                }
+            });
+        }
+
+        function playNow(gameData) {
+            $.ajax({
+                url: 'https://localhost:44370/game/playgames',
+                type: 'POST',
+                data: gameData,
+                success: function (respResult) {
+                    console.log('success', respResult);
+                    outputData(respResult.join(' \n'))
+                },
+                error: function (data) {
+                    console.log(data);
+                }
+            });
+        }
+    </script>
+}
